@@ -17,12 +17,13 @@
 
 @implementation ETFlowView
 
+#pragma mark - Init
+
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
     if (self) {
-        // Initialization code
-        isUpdating = NO;
+        [self initParams];
     }
     return self;
 }
@@ -31,8 +32,11 @@
 {
     [super awakeFromNib];
 
+    [self initParams];
+}
+
+- (void)initParams {
     isUpdating = NO;
-    [self registerRecursively:self];
 }
 
 #pragma mark - View cycle
@@ -43,21 +47,18 @@
     
     // KVO
     [self registerRecursively:view];
-//    [view addObserver:self forKeyPath:@"contentSize" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
 }
 
 - (void)willRemoveSubview:(UIView *)subview {
     
-    [self removeKeyPathObserver:subview];
+    // KVO
+    [self unregisterRecursively:subview];
     
     [super removeFromSuperview];
 }
 
 - (void)dealloc {
-    
-    for (UIView *view in self.subviews) {
-        [self removeKeyPathObserver:view];
-    }
+    [self unregisterRecursively:self];
 }
 
 #pragma mark - Private Methods
@@ -74,35 +75,29 @@
     }
 }
 
+- (void)unregisterRecursively:(UIView *)masterView {
+    
+    if ([masterView.subviews count] > 0) {
+        
+        // Register all views
+        for (UIView *view in masterView.subviews) {
+            [self removeKeyPathObserver:view];
+            [self unregisterRecursively:view];
+        }
+    }
+}
+
 #pragma mark - KVO methods
 
 - (void)addKeyPathObserver:(UIView *)view {
     
     [view addObserver:self forKeyPath:@"frame" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"bounds" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"transform" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"position" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"zPosition" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"anchorPoint" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"anchorPointZ" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"zPosition" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"frame" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
-    [view.layer addObserver:self forKeyPath:@"transform" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
 }
 
 - (void)removeKeyPathObserver:(UIView *)view {
     
     @try {
         [view removeObserver:self forKeyPath:@"frame"];
-        [view.layer removeObserver:self forKeyPath:@"bounds"];
-        [view.layer removeObserver:self forKeyPath:@"transform"];
-        [view.layer removeObserver:self forKeyPath:@"position"];
-        [view.layer removeObserver:self forKeyPath:@"zPosition"];
-        [view.layer removeObserver:self forKeyPath:@"anchorPoint"];
-        [view.layer removeObserver:self forKeyPath:@"anchorPointZ"];
-        [view.layer removeObserver:self forKeyPath:@"zPosition"];
-        [view.layer removeObserver:self forKeyPath:@"frame"];
-        [view.layer removeObserver:self forKeyPath:@"transform"];
     }
     @catch (NSException * __unused exception) {
         // Nothing important
@@ -130,7 +125,7 @@
                 if ([object isKindOfClass:[UIView class]]) {
                     
                     isUpdating = YES;
-                    [self updateViewHeight:((UIView *)object) by:delta];
+                    [self updateViewHeight:((UIView *)object) basedOn:nil by:delta];
                     isUpdating = NO;
                 }
             }
@@ -138,29 +133,38 @@
     }
 }
 
-- (void)updateViewHeight:(UIView *)masterView by:(CGFloat)delta {
+- (void)updateViewHeight:(UIView *)masterView basedOn:(UIView *)innerView by:(CGFloat)delta {
     
     CGRect frame;
     
     if ([masterView.superview.subviews count] > 0) {
         
-        // Loop through all the elements
+        // Loop through all the siblings elements
         for (UIView *view in masterView.superview.subviews) {
             
+            // Make sure that the position of the view inside a view with a very big height is not considered below an external but closer to top view
+            CGFloat innerDelta = (innerView != nil) ? [innerView convertRect:innerView.frame toView:masterView].origin.y : 0.0f;
+        
             // Check if they are below the current view
-            if (masterView.frame.origin.y <= view.frame.origin.y && view != masterView) {
+            if (view.frame.origin.y > (masterView.frame.origin.y + innerDelta) && view != masterView) {
                 
                 // Update view frame
                 frame = view.frame;
-                frame.origin.y -= delta;
-                frame.size.height += delta;
+                frame.origin.y += delta;
                 view.frame = frame;
             }
         }
         
+        // Resize up until ourselves
         if (masterView.superview != self) {
+            
+            // Resize the view frame
+            frame = masterView.superview.frame;
+            frame.size.height += delta;
+            masterView.superview.frame = frame;
+            
             // Update parent views
-            [self updateViewHeight:masterView.superview by:delta];
+            [self updateViewHeight:masterView.superview basedOn:masterView by:delta];
         }
     }
 }
