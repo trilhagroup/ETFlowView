@@ -15,17 +15,13 @@ Clone this repo and copy the folder **ETFlowView** into your Xcode project.
 How-to
 --------
 
-ETFlowView can be user both programmatically or loaded automatically from a nib.
+**ETFlowView** can be user both programmatically or loaded automatically from a nib.
 
 ### Nib
 
-If you are going to load it from a nib, just load a standard `UIView` from the elements panel and change its class to `ETFlowView`:
+If you are going to load it from a nib, just load a standard `UIScrollView` from the elements panel and change its class to `ETFlowView`:
 
 ![image](nibProperty.png)
-		
-If you wish to use a subclass of `UIView`, such as `UIScrollView` or `UITableView`, just add `ETFlowView` view inside them as a subview.
-
-![image](inside.png)
 
 If you need to reference it on code, just make an IBOutlet out of it:
 
@@ -42,6 +38,8 @@ All elements will be automatically bound whenever you call `addSubView` or `remo
 ### Trigger
 
 To trigger the update the update on the view's structure, you have to **manually** update the target frame. Do not use `sizeToFit`, since it will end up updating the inner views of public classes.
+
+Everytime a view is resized, `ETFlowView` will update its `contentSize` property to perfectly fit the content.
 
 Support
 --------
