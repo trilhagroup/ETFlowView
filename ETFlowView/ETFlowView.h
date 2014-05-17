@@ -8,6 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ETFlowView : UIScrollView
+@interface ETFlowView : UIScrollView <UIScrollViewDelegate>
 
 @end

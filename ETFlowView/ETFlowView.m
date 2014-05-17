@@ -7,10 +7,12 @@
 //
 
 #import <QuartzCore/QuartzCore.h>
+#import <objc/runtime.h>
 #import "ETFlowView.h"
 
 @interface ETFlowView () {
     BOOL isUpdating;
+    BOOL isScrolling;
 }
 
 @end
@@ -38,31 +40,66 @@
 - (void)initParams {
     // Params
     isUpdating = NO;
+    isScrolling = NO;
 
     // Content
     self.contentSize = CGSizeMake(self.frame.size.width, self.frame.size.height);
+    self.delegate = self;
 	[self flashScrollIndicators];
 }
 
-#pragma mark - View cycle
+#pragma mark - Swizzling Methods
 
-- (void)addSubview:(UIView *)view {
-    
-    [super addSubview:view];
-    
++ (void)load {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        Class class = [UIView class];
+        
+        // When swizzling a class method, use the following:
+        // Class class = object_getClass((id)self);
+        
+        NSArray *methods = @[@"didAddSubview", @"didRemoveSubview"];
+        
+        for (int i = 0; i < [methods count]; i++) {
+        
+            SEL originalSelector = NSSelectorFromString([methods objectAtIndex:i]);
+            SEL swizzledSelector = NSSelectorFromString([@"ss_" stringByAppendingString:[methods objectAtIndex:i]]);
+            
+            Method originalMethod = class_getInstanceMethod(class, originalSelector);
+            Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+            
+            BOOL didAddMethod =
+            class_addMethod(class,
+                            originalSelector,
+                            method_getImplementation(swizzledMethod),
+                            method_getTypeEncoding(swizzledMethod));
+            
+            if (didAddMethod) {
+                class_replaceMethod(class,
+                                    swizzledSelector,
+                                    method_getImplementation(originalMethod),
+                                    method_getTypeEncoding(originalMethod));
+            } else {
+                method_exchangeImplementations(originalMethod, swizzledMethod);
+            }
+        }
+    });
+}
+
+#pragma mark - View Cycle
+
+- (void)ss_didAddSubview:(UIView *)view {
     // KVO
     [self registerRecursively:view];
 }
 
-- (void)willRemoveSubview:(UIView *)subview {
-    
+- (void)ss_willRemoveSubview:(UIView *)subview {
     // KVO
     [self unregisterRecursively:subview];
-    
-    [super removeFromSuperview];
 }
 
 - (void)dealloc {
+    // KVO
     [self unregisterRecursively:self];
 }
 
@@ -70,25 +107,23 @@
 
 - (void)registerRecursively:(UIView *)masterView {
     
-    if ([masterView.subviews count] > 0) {
-        
-        // Register all views
-        for (UIView *view in masterView.subviews) {
-            [self addKeyPathObserver:view];
-            [self registerRecursively:view];
-        }
+    // Register masterView
+    [self addKeyPathObserver:masterView];
+    
+    // Register all views
+    for (UIView *view in masterView.subviews) {
+        [self registerRecursively:view];
     }
 }
 
 - (void)unregisterRecursively:(UIView *)masterView {
     
-    if ([masterView.subviews count] > 0) {
-        
-        // Register all views
-        for (UIView *view in masterView.subviews) {
-            [self removeKeyPathObserver:view];
-            [self unregisterRecursively:view];
-        }
+    // Unregister masterView
+    [self removeKeyPathObserver:masterView];
+
+    // Unregister all views
+    for (UIView *view in masterView.subviews) {
+        [self unregisterRecursively:view];
     }
 }
 
@@ -102,19 +137,20 @@
 - (void)removeKeyPathObserver:(UIView *)view {
     
     @try {
-        [view removeObserver:self forKeyPath:@"frame"];
+        [view removeObserver:self forKeyPath:@"frame" context:NULL];
     }
     @catch (NSException * __unused exception) {
-        // Nothing important
+        // Nothing important, just log for know reasons
+        NSLog(@"%@, %@", exception.name, exception.reason);
     }
 }
 
 
-#pragma mark - Resizing methods
+#pragma mark - Resizing Methods
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
-    if (!isUpdating) {
+    if (!isUpdating && !isScrolling) {
     
         if ([keyPath isEqualToString:@"frame"]) {
             
@@ -192,6 +228,20 @@
             [self updateViewHeight:masterView.superview basedOnFrame:masterView.frame by:delta];
         }
     }
+}
+
+#pragma mark - ScrollView Delegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    isScrolling = YES;
+}
+
+- (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
+    isScrolling = scrollView.decelerating;
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+    isScrolling = decelerate;
 }
 
 @end
