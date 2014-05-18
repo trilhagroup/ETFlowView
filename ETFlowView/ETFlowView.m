@@ -39,6 +39,7 @@
 
 - (void)initParams {
     // Params
+    _shouldBind = NO;
     isUpdating = NO;
     isScrolling = NO;
 
@@ -48,59 +49,37 @@
 	[self flashScrollIndicators];
 }
 
-#pragma mark - Swizzling Methods
-
-+ (void)load {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        Class class = [UIView class];
-        
-        // When swizzling a class method, use the following:
-        // Class class = object_getClass((id)self);
-        
-        NSArray *methods = @[@"didAddSubview", @"didRemoveSubview"];
-        
-        for (int i = 0; i < [methods count]; i++) {
-        
-            SEL originalSelector = NSSelectorFromString([methods objectAtIndex:i]);
-            SEL swizzledSelector = NSSelectorFromString([@"ss_" stringByAppendingString:[methods objectAtIndex:i]]);
-            
-            Method originalMethod = class_getInstanceMethod(class, originalSelector);
-            Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
-            
-            BOOL didAddMethod =
-            class_addMethod(class,
-                            originalSelector,
-                            method_getImplementation(swizzledMethod),
-                            method_getTypeEncoding(swizzledMethod));
-            
-            if (didAddMethod) {
-                class_replaceMethod(class,
-                                    swizzledSelector,
-                                    method_getImplementation(originalMethod),
-                                    method_getTypeEncoding(originalMethod));
-            } else {
-                method_exchangeImplementations(originalMethod, swizzledMethod);
-            }
-        }
-    });
-}
-
 #pragma mark - View Cycle
 
-- (void)ss_didAddSubview:(UIView *)view {
+- (void)didAddSubview:(UIView *)subview {
     // KVO
-    [self registerRecursively:view];
+    if (_shouldBind) [self registerRecursively:subview];
 }
 
-- (void)ss_willRemoveSubview:(UIView *)subview {
+- (void)willRemoveSubview:(UIView *)subview {
     // KVO
-    [self unregisterRecursively:subview];
+    if (_shouldBind) [self unregisterRecursively:subview];
 }
 
 - (void)dealloc {
     // KVO
-    [self unregisterRecursively:self];
+    if (_shouldBind) [self unregisterRecursively:self];
+}
+
+#pragma mark - Setters
+
+- (void)setShouldBind:(BOOL)shouldBind {
+    
+    if (_shouldBind != shouldBind) {
+        
+        if (shouldBind == YES) {
+            [self registerRecursively:self];
+        } else {
+            [self unregisterRecursively:self];
+        }
+        
+        _shouldBind = shouldBind;
+    }
 }
 
 #pragma mark - Private Methods
@@ -127,10 +106,17 @@
     }
 }
 
+#pragma mark - Public methods
+
+- (void)updateView:(UIView *)view toFrame:(CGRect)newFrame {
+    CGRect oldFrame = view.frame;
+    view.frame = newFrame;
+    [self updateHierarchyForView:view fromOldFrame:oldFrame toNewFrame:newFrame];
+}
+
 #pragma mark - KVO methods
 
 - (void)addKeyPathObserver:(UIView *)view {
-    
     [view addObserver:self forKeyPath:@"frame" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
 }
 
@@ -145,31 +131,43 @@
     }
 }
 
-
-#pragma mark - Resizing Methods
-
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
-    if (!isUpdating && !isScrolling) {
-    
+    // We cannot be on scroll mode
+    if (!isScrolling) {
+        
+        // Make sure we are dealing with frames
         if ([keyPath isEqualToString:@"frame"]) {
             
-            // Pick values
-            CGRect newSize = [[change objectForKey:NSKeyValueChangeNewKey] CGRectValue];
-            CGRect oldSize = [[change objectForKey:NSKeyValueChangeOldKey] CGRectValue];
-            CGFloat delta = newSize.size.height - oldSize.size.height;
+            // Capture some properties
+            CGRect newFrame = [[change objectForKey:NSKeyValueChangeNewKey] CGRectValue];
+            CGRect oldFrame = [[change objectForKey:NSKeyValueChangeOldKey] CGRectValue];
             
-            // Limit to relevant values
-            if (delta != 0.0f) {
-            
-                // See if we have a view
-                if ([object isKindOfClass:[UIView class]]) {
-                    
-                    isUpdating = YES;
-                    [self updateViewHeight:((UIView *)object) basedOnFrame:oldSize by:delta];
-                    isUpdating = NO;
-                }
+            // See if we have a view
+            if ([object isKindOfClass:[UIView class]]) {
+                // Update hierarchy
+                [self updateHierarchyForView:((UIView *)object) fromOldFrame:oldFrame toNewFrame:newFrame];
             }
+        }
+    }
+    
+}
+
+#pragma mark - Resizing Methods
+    
+- (void)updateHierarchyForView:(UIView *)view fromOldFrame:(CGRect)oldFrame toNewFrame:(CGRect)newFrame {
+    
+    // Make sure our view is static at this moment
+    if (!isUpdating) {
+        
+        // Get their delta
+        CGFloat delta = newFrame.size.height - oldFrame.size.height;
+        
+        // Limit to relevant values
+        if (delta != 0.0f) {
+            isUpdating = YES;
+            [self updateViewHeight:view basedOnFrame:CGRectZero by:delta];
+            isUpdating = NO;
         }
     }
 }
@@ -241,7 +239,7 @@
 }
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
-    isScrolling = decelerate;
+    isScrolling = !decelerate;
 }
 
 @end

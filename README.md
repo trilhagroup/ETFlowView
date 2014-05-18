@@ -15,6 +15,8 @@ Clone this repo and copy the folder **ETFlowView** into your Xcode project.
 How-to
 --------
 
+![image](demo.gif)
+
 **ETFlowView** can be user both programmatically or loaded automatically from a nib.
 
 ### Nib
@@ -25,19 +27,19 @@ If you are going to load it from a nib, just load a standard `UIScrollView` from
 
 If you need to reference it on code, just make an IBOutlet out of it:
 
-![image](codeProperty.png)
+`@property (strong, nonatomic) IBOutlet ETFlowView *view;`
 
 ### Programmatically
 
 Programmatically, just alloc it and set its frame:
 
-![image](allocProperty.png)
-
-All elements will be automatically bound whenever you call `addSubView` or `removeFromSuperview`.
+`[[ETFlowView alloc] initWithFrame:CGRectMake(0.0, 0.0, self.view.frame.size.width, self.view.frame.size.height)];`
 
 ### Trigger
 
-To trigger the update the update on the view's structure, you have to **manually** update the target frame. Do not use `sizeToFit`, since it will end up updating the inner views of public classes.
+If you want KVO enabled on every view of the hierarchy, you should set `_shouldBind` to `YES`. On this mode, all elements will be automatically bound whenever you call `addSubView` or `removeFromSuperview`. Unfortunatelly, Apple's implementation doesn't follow keyPath:frame properly, so missed calls occur frequently.
+
+Otherwise, you can **manually** update the hierarchy. To do this, just call `- (void)updateView:(UIView *)view toFrame:(CGRect)newFrame;` with the updated size of any view. You can use `sizeThatFits:` to help on your frame's calculations, but just don't forget to call the aforementioned method.
 
 Everytime a view is resized, `ETFlowView` will update its `contentSize` property to perfectly fit the content.
 

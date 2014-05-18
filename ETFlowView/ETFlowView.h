@@ -10,4 +10,8 @@
 
 @interface ETFlowView : UIScrollView <UIScrollViewDelegate>
 
+@property (assign, nonatomic) BOOL shouldBind;
+
+- (void)updateView:(UIView *)view toFrame:(CGRect)newFrame;
+
 @end
