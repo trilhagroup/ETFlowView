@@ -27,13 +27,15 @@ If you are going to load it from a nib, just load a standard `UIScrollView` from
 
 If you need to reference it on code, just make an IBOutlet out of it:
 
-`@property (strong, nonatomic) IBOutlet ETFlowView *view;`
+@property (strong, nonatomic) IBOutlet ETFlowView *view;`
 
 ### Programmatically
 
 Programmatically, just alloc it and set its frame:
 
-`[[ETFlowView alloc] initWithFrame:CGRectMake(0.0, 0.0, self.view.frame.size.width, self.view.frame.size.height)];`
+```
+[[ETFlowView alloc] initWithFrame:CGRectMake(0.0, 0.0, self.view.frame.size.width, self.view.frame.size.height)];
+```
 
 ### Trigger
 
