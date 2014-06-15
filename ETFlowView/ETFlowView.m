@@ -203,7 +203,6 @@
             
             // Check if they are below the current view
             if (view.frame.origin.y >= (masterView.frame.origin.y + innerFrame.origin.y) && view != masterView) {
-                
                 // Update view frame
                 frame = view.frame;
                 frame.origin.y += delta;
