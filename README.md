@@ -57,4 +57,4 @@ Just open an issue on Github and we'll get to it as soon as possible.
 
 About
 --------
-**ETFlowView** is brought to you by Estúdio Trilha.
+**ETFlowView** is brought to you by Trilha.
