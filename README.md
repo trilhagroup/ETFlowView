@@ -13,7 +13,7 @@ Clone this repo and copy the folder **ETFlowView** into your Xcode project.
 How-to
 --------
 
-![image](demo.gi<!---->f)
+![image](demo.gif)
 
 **ETFlowView** can be user both programmatically or loaded automatically from a nib.
 
