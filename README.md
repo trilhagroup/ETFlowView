@@ -49,7 +49,7 @@ Remember that, if your element is absolute positioned, it will not be affected b
 
 ![image](absolute.png)
 
-If view B is resized, it will not affect any of the elements on view A. That happens because view B is not a child neither a parent of view A (it's actually a siling), which means it is absolute positioned and will not affect any of its siblings.
+If view B is resized, it will not affect any of the elements on view A. That happens because view B is not a child neither a parent of view A (it's actually a sibling), which means it is absolute positioned and will not affect any of its siblings.
 
 Support
 --------
