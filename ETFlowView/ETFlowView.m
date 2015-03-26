@@ -109,8 +109,22 @@
 #pragma mark - Public methods
 
 - (void)updateView:(UIView *)view toFrame:(CGRect)newFrame {
+    
+    // Disables autoresizing
+    UIViewAutoresizing autoResizing = view.autoresizingMask;
+    view.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    
+    // Update view frame
     CGRect oldFrame = view.frame;
     view.frame = newFrame;
+    
+    // Enables autoresizing
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        // Enables
+        view.autoresizingMask = autoResizing;
+    });
+    
+    // Update view hierarchy
     [self updateHierarchyForView:view fromOldFrame:oldFrame toNewFrame:newFrame];
 }
 
@@ -181,7 +195,7 @@
         // Loop through all the siblings elements
         for (UIView *view in masterView.superview.subviews) {
             
-            /* Make sure that the position of the view inside a view with a very big height is not considered below an external but closer to top view.
+            /* Make sure that the position of the view inside a view with a reasonable height is not considered above an external but closer to top view.
              
              Let's draw an example:
              
@@ -195,35 +209,70 @@
              /       /     /       /
              /////////     /////////
             
-             Even tough view's A parent has a smaller .y compared to view's B, view B shall not be moved, because externally it is below view A.
+             Even tough view's A parent has a smaller .y compared to view's B, view B shall not be moved, because externally it is above view A.
+                
+             We must also remember that depending upon the direction of the resize, we may need to take different actions:
              
-             If you didn't understand, I don't care :)
+                - if we are shrinking a view, we should ignore the ones that are on the same .y, otherwise they will all get decreased vertically forever.
+                - if we are expanding a view, we can now take the views on the same .y and expand them since their .y will not be changed.
              
              */
             
-            // Check if they are below the current view
-            if (view.frame.origin.y >= (masterView.frame.origin.y + innerFrame.origin.y) && view != masterView) {
+            // Direction of our resizing (expanding/shrinking)
+            BOOL originBoundaryLimit = NO;
+            if (delta > 0)  {
+                originBoundaryLimit = (view.frame.origin.y >= (masterView.frame.origin.y + innerFrame.origin.y));
+            } else {
+                originBoundaryLimit = (view.frame.origin.y > (masterView.frame.origin.y + innerFrame.origin.y));
+            }
+            
+            // We should not resize our own view
+            if (originBoundaryLimit && view != masterView) {
+                
+                // Disables autoresizing
+                UIViewAutoresizing autoResizing = view.autoresizingMask;
+                view.autoresizingMask = UIViewAutoresizingNone;
+                
                 // Update view frame
                 frame = view.frame;
                 frame.origin.y += delta;
                 view.frame = frame;
+                
+                // Enables autoresizing
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                    // Enables
+                    view.autoresizingMask = autoResizing;
+                });
             }
         }
         
         // Resize our view content size or go through its childs
-        if (masterView.superview == self) {
+        UIView *superView = masterView.superview;
+        
+        // Cancel all resizing for now
+        BOOL currentAutoresizesSubviews = superView.autoresizesSubviews;
+        superView.autoresizesSubviews = NO;
+        
+        if (superView == self) {
             // Change to fit perfectly
             self.contentSize = CGSizeMake(self.contentSize.width, self.contentSize.height + delta);
             
         } else {
+            
             // Resize the view frame
-            frame = masterView.superview.frame;
+            frame = superView.frame;
             frame.size.height += delta;
-            masterView.superview.frame = frame;
+            superView.frame = frame;
             
             // Update parent views
-            [self updateViewHeight:masterView.superview basedOnFrame:masterView.frame by:delta];
+            [self updateViewHeight:superView basedOnFrame:masterView.frame by:delta];
         }
+        
+        // Delay execution of an action for seconds.
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            // Reenable resizing previous state
+            superView.autoresizesSubviews = currentAutoresizesSubviews;
+        });
     }
 }
 
