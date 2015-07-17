@@ -51,6 +51,10 @@ Remember that, if your element is absolute positioned, it will not be affected b
 
 If view B is resized, it will not affect any of the elements on view A. That happens because view B is not a child neither a parent of view A (it's actually a sibling), which means it is absolute positioned and will not affect any of its siblings.
 
+### Matrix
+
+If you wish to use a matrix oriented design, with elements on both sides, feel free to enable `_isMatrix` to `YES`. It will recalculate your grid for every call, which is perfect for squared or rectangular layouts!
+
 Support
 --------
 Just open an issue on Github and we'll get to it as soon as possible.
