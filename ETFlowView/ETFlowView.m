@@ -296,16 +296,25 @@
         BOOL currentAutoresizesSubviews = superView.autoresizesSubviews;
         superView.autoresizesSubviews = NO;
         
-        // Resize the superview frame
-        frame = superView.frame;
-        frame.size.height += delta;
-        superView.frame = frame;
-        
         // Make our superviews perfect fit
         if (superView == self) {
             // Only need to update our content size
             self.contentSize = CGSizeMake(self.contentSize.width, self.contentSize.height + delta);
+            
+            // Resize our flow frame only if contentSize is now smaller than its frame
+            if (self.contentSize.height < superView.frame.size.height) {
+                frame = superView.frame;
+                frame.size.height += delta;
+                superView.frame = frame;
+            }
+            
         } else {
+            
+            // Resize the superview frame
+            frame = superView.frame;
+            frame.size.height += delta;
+            superView.frame = frame;
+            
             // Update parent views
             [self updateViewHeight:superView basedOnFrame:masterView.frame by:delta];
         }
