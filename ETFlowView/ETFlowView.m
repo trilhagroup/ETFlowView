@@ -199,11 +199,10 @@
         // Loop through all the siblings elements
         for (UIView *view in masterView.superview.subviews) {
             
-            // We must skip views which are set as transparent
-            if (view.alpha == 0.0f) continue;
-            
             // Need to get highest position before any changes
-            if(_isMatrix) preHighestY = MAX(preHighestY, view.frame.origin.y);
+            if (_isMatrix && !(view.alpha == 0.0f) && !(view.frame.size.height <= 0.0f)) {
+                preHighestY = MAX(preHighestY, view.frame.origin.y);
+            }
             
             /* Make sure that the position of the view inside a view with a reasonable height is not considered above an external but closer to top view.
              
