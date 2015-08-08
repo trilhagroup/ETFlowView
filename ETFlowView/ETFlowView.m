@@ -13,6 +13,7 @@
 @interface ETFlowView () {
     BOOL isUpdating;
     BOOL isScrolling;
+    BOOL hasUpdatedChild;
 }
 
 @end
@@ -39,12 +40,14 @@
 
 - (void)initParams {
     // Params
-    _shouldBind = NO;
+    _bindKVO = NO;
     _isMatrix = NO;
+    _fitFrameToContentSize = NO;
     _matrixHorizontalPadding = 0.0f;
     _matrixVerticalPadding = 0.0f;
     isUpdating = NO;
     isScrolling = NO;
+    hasUpdatedChild = NO;
 
     // Content
     self.contentSize = CGSizeMake(self.frame.size.width, self.frame.size.height);
@@ -56,24 +59,24 @@
 
 - (void)didAddSubview:(UIView *)subview {
     // KVO
-    if (_shouldBind) [self registerRecursively:subview];
+    if (_bindKVO) [self registerRecursively:subview];
 }
 
 - (void)willRemoveSubview:(UIView *)subview {
     // KVO
-    if (_shouldBind) [self unregisterRecursively:subview];
+    if (_bindKVO) [self unregisterRecursively:subview];
 }
 
 - (void)dealloc {
     // KVO
-    if (_shouldBind) [self unregisterRecursively:self];
+    if (_bindKVO) [self unregisterRecursively:self];
 }
 
 #pragma mark - Setters
 
 - (void)setShouldBind:(BOOL)shouldBind {
     
-    if (_shouldBind != shouldBind) {
+    if (_bindKVO != shouldBind) {
         
         if (shouldBind == YES) {
             [self registerRecursively:self];
@@ -81,7 +84,7 @@
             [self unregisterRecursively:self];
         }
         
-        _shouldBind = shouldBind;
+        _bindKVO = shouldBind;
     }
 }
 
@@ -112,23 +115,7 @@
 #pragma mark - Public methods
 
 - (void)updateView:(UIView *)view toFrame:(CGRect)newFrame {
-    
-    // Disables autoresizing
-    UIViewAutoresizing autoResizing = view.autoresizingMask;
-    view.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    
-    // Update view frame
-    CGRect oldFrame = view.frame;
-    view.frame = newFrame;
-    
-    // Enables autoresizing
-    // dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.0f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-    // Enables previous state
-    view.autoresizingMask = autoResizing;
-    // });
-
-    // Update view hierarchy
-    [self updateHierarchyForView:view fromOldFrame:oldFrame toNewFrame:newFrame];
+    [self updateHierarchyForView:view fromOldFrame:view.frame toNewFrame:newFrame];
 }
 
 #pragma mark - KVO methods
@@ -203,7 +190,31 @@
             if (_isMatrix && !(view.alpha == 0.0f) && !(view.frame.size.height <= 0.0f)) {
                 preHighestY = MAX(preHighestY, view.frame.origin.y);
             }
+        }
+        
+        // After we have all the initial values for the current hierarchy
+        // We can finally resize our main view to its desired size
+        if (!hasUpdatedChild) {
             
+            // Disables autoresizing
+            UIViewAutoresizing autoResizing = masterView.autoresizingMask;
+            masterView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+            
+            // Update view frame
+            frame = masterView.frame;
+            frame.size.height += delta;
+            masterView.frame = frame;
+            
+            // Enables previous state
+            masterView.autoresizingMask = autoResizing;
+            
+            // Mark our child view as resized
+            hasUpdatedChild = YES;
+        }
+        
+        // Loop through all the siblings elements
+        for (UIView *view in masterView.superview.subviews) {
+
             /* Make sure that the position of the view inside a view with a reasonable height is not considered above an external but closer to top view.
              
              Let's draw an example:
@@ -248,10 +259,7 @@
                 view.frame = frame;
                 
                 // Enables autoresizing
-                // dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.0f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-                // Restore state
                 view.autoresizingMask = autoResizing;
-                // });
             }
         }
         
@@ -302,7 +310,7 @@
             self.contentSize = CGSizeMake(self.contentSize.width, self.contentSize.height + delta);
             
             // Resize our flow frame to fit our matrix
-            if (_isMatrix) {
+            if (_fitFrameToContentSize) {
                 frame = superView.frame;
                 frame.size.height += delta;
                 superView.frame = frame;
@@ -324,6 +332,9 @@
         // Reenable resizing previous state
         superView.autoresizesSubviews = currentAutoresizesSubviews;
         // });
+        
+        // Restore our defaults for the next call
+        hasUpdatedChild = NO;
     }
 }
 

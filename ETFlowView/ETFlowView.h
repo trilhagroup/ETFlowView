@@ -10,8 +10,9 @@
 
 @interface ETFlowView : UIScrollView <UIScrollViewDelegate>
 
-@property (assign, nonatomic) BOOL shouldBind;
+@property (assign, nonatomic) BOOL bindKVO;
 @property (assign, nonatomic) BOOL isMatrix;
+@property (assign, nonatomic) BOOL fitFrameToContentSize;
 @property (assign, nonatomic) CGFloat matrixHorizontalPadding;
 @property (assign, nonatomic) CGFloat matrixVerticalPadding;
 
