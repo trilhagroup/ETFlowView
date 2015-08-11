@@ -39,17 +39,6 @@
 }
 
 - (void)initParams {
-    // Params
-    _bindKVO = NO;
-    _isMatrix = NO;
-    _fitFrameToContentSize = NO;
-    _matrixHorizontalPadding = 0.0f;
-    _matrixVerticalPadding = 0.0f;
-    isUpdating = NO;
-    isScrolling = NO;
-    hasUpdatedChild = NO;
-
-    // Content
     self.contentSize = CGSizeMake(self.frame.size.width, self.frame.size.height);
     self.delegate = self;
 	[self flashScrollIndicators];
@@ -243,7 +232,8 @@
             if (delta > 0)  {
                 originBoundaryLimit = (view.frame.origin.y >= (masterView.frame.origin.y + innerFrame.origin.y));
             } else {
-                originBoundaryLimit = (view.frame.origin.y > (masterView.frame.origin.y + innerFrame.origin.y));
+                // Sometimes numbers can be very approximate, so we add a security margin
+                originBoundaryLimit = (view.frame.origin.y > (masterView.frame.origin.y + innerFrame.origin.y + 0.1f));
             }
             
             // We should not resize our own view
