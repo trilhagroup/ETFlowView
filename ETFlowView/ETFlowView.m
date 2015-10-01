@@ -101,6 +101,12 @@
     }
 }
 
+- (CGRect)normalizeOriginAtFrame:(CGRect)frame forSuperView:(UIView *)superview {
+    frame.origin.y = MAX(frame.origin.y, 0.0f);
+    frame.origin.y = MIN(frame.origin.y, superview.frame.size.height);
+    return frame;
+}
+
 #pragma mark - Public methods
 
 - (void)updateView:(UIView *)view toFrame:(CGRect)newFrame {
@@ -177,12 +183,12 @@
             
             // Need to get highest position before any changes
             if (_isMatrix && !(view.alpha == 0.0f) && !(view.frame.size.height <= 0.0f)) {
-                preHighestY = MAX(preHighestY, view.frame.origin.y);
+                preHighestY = MAX(preHighestY, [self normalizeOriginAtFrame:view.frame forSuperView:view.superview].origin.y);
             }
         }
         
-        // After we have all the initial values for the current hierarchy
-        // We can finally resize our main view to its desired size
+        // After we have all the initial values for the current hierarchy,
+        // we can finally resize our main view to its desired size
         if (!hasUpdatedChild) {
             
             // Disables autoresizing
@@ -193,6 +199,9 @@
             frame = masterView.frame;
             frame.size.height += delta;
             masterView.frame = frame;
+            
+            // Mark as hidden or visible
+            masterView.hidden = (frame.size.height == 0.0f);
             
             // Enables previous state
             masterView.autoresizingMask = autoResizing;
@@ -229,27 +238,43 @@
             
             // Direction of our resizing (expanding/shrinking)
             BOOL originBoundaryLimit = NO;
+            CGFloat compoundY = (masterView.frame.origin.y + [self normalizeOriginAtFrame:innerFrame forSuperView:masterView].origin.y);
             if (delta > 0)  {
-                originBoundaryLimit = (view.frame.origin.y >= (masterView.frame.origin.y + innerFrame.origin.y));
+                originBoundaryLimit = (view.frame.origin.y >= compoundY);
             } else {
                 // Sometimes numbers can be very approximate, so we add a security margin
-                originBoundaryLimit = (view.frame.origin.y > (masterView.frame.origin.y + innerFrame.origin.y + 0.1f));
+                originBoundaryLimit = (view.frame.origin.y > (compoundY + 0.1f));
             }
             
             // We should not resize our own view
             if (originBoundaryLimit && view != masterView) {
                 
-                // Disables autoresizing
-                UIViewAutoresizing autoResizing = view.autoresizingMask;
-                view.autoresizingMask = UIViewAutoresizingNone;
+                // Run through parent views
+                UIView *currentView = view;
+                BOOL isVisible = YES;
+                do {
+                    currentView = currentView.superview;
+                    if (currentView.frame.size.height == 0.0f) {
+                        isVisible = NO;
+                        break;
+                    }
+                } while (currentView != self);
                 
-                // Update view frame
-                frame = view.frame;
-                frame.origin.y += delta;
-                view.frame = frame;
-                
-                // Enables autoresizing
-                view.autoresizingMask = autoResizing;
+                // Check if our parent
+                // views are all visible
+                if (isVisible) {
+                    // Disables autoresizing
+                    UIViewAutoresizing autoResizing = view.autoresizingMask;
+                    view.autoresizingMask = UIViewAutoresizingNone;
+                    
+                    // Update view frame
+                    frame = view.frame;
+                    frame.origin.y += delta;
+                    view.frame = frame;
+                    
+                    // Enables autoresizing
+                    view.autoresizingMask = autoResizing;
+                }
             }
         }
         
@@ -276,7 +301,7 @@
                 [view setFrame:CGRectMake(currentX, currentY, view.frame.size.width, view.frame.size.height)];
                 
                 // Highest position after all changes
-                postHighestY = MAX(postHighestY, view.frame.origin.y);
+                postHighestY = MAX(postHighestY, [self normalizeOriginAtFrame:view.frame forSuperView:view.superview].origin.y);
                 
                 // Set our new cursor pointer
                 currentX += (view.frame.size.width + _matrixHorizontalPadding);
@@ -297,24 +322,27 @@
         if (superView == self) {
             
             // Only need to update our content size
-            self.contentSize = CGSizeMake(self.contentSize.width, self.contentSize.height + delta);
+            self.contentSize = CGSizeMake(self.contentSize.width, MAX(self.contentSize.height + delta, 0.0f));
             
             // Resize our flow frame to fit our matrix
             if (_fitFrameToContentSize) {
                 frame = superView.frame;
-                frame.size.height += delta;
+                frame.size.height = MAX(frame.size.height + delta, 0.0f);
                 superView.frame = frame;
             }
             
         } else {
             
+            // See if our wrapper is smaller than our child
+            BOOL wrapperSmallerThenChild = (superView.frame.size.height + delta < 0.0f);
+            
             // Resize the superview frame
             frame = superView.frame;
-            frame.size.height += delta;
+            frame.size.height = MAX(frame.size.height + delta, 0.0f);
             superView.frame = frame;
             
             // Update parent views
-            [self updateViewHeight:superView basedOnFrame:masterView.frame by:delta];
+            if (!wrapperSmallerThenChild) [self updateViewHeight:superView basedOnFrame:masterView.frame by:delta];
         }
         
         // Delay execution of an action for seconds.

@@ -55,6 +55,10 @@ If view B is resized, it will not affect any of the elements on view A. That hap
 
 If you wish to use a matrix oriented design, with elements on both sides, feel free to enable `_isMatrix` to `YES`. It will recalculate your grid for every call, which is perfect for squared or rectangular layouts!
 
+### Categories
+
+If you would like some wrappers to help with resizing texts or using pre-defined heights, try `ETFlowView+Resize.h` and `ETFlowView+Text.h`. Just import them in your class and use their available methods.
+
 Support
 --------
 Just open an issue on Github and we'll get to it as soon as possible.
