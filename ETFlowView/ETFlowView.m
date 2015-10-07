@@ -34,8 +34,10 @@
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-
-    [self initParams];
+    if (self) {
+        // Initialization code
+        [self initParams];
+    }
 }
 
 - (void)initParams {
