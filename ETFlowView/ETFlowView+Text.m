@@ -18,7 +18,7 @@
 }
 
 - (void)resizeAndSetText:(NSString *)text forTextInput:(UIView *)textInput withMinimumHeight:(CGFloat)mininumHeight {
-    [self setHeight:[textInput setText:text withMinimumHeight:mininumHeight andResize:NO] forView:textInput];
+    [self expandFrame:YES forView:textInput withHeight:[textInput setText:text withMinimumHeight:mininumHeight andResize:NO]];
 }
 
 - (void)resizeAndSetText:(NSString *)text forTextInput:(UIView *)textInput expandingWrapperWithMinimumHeight:(CGFloat)wrapperMininumHeight {
@@ -34,11 +34,11 @@
 
 // Attributed Text
 - (void)resizeAndSetAttributedText:(NSAttributedString *)text forTextInput:(UIView *)textInput {
-    [self setHeight:[textInput setAttributedText:text withMinimumHeight:0.0f andResize:NO] forView:textInput];
+    [self expandFrame:YES forView:textInput withHeight:[textInput setAttributedText:text withMinimumHeight:0.0f andResize:NO]];
 }
 
 - (void)resizeAndSetAttributedText:(NSAttributedString *)text forTextInput:(UIView *)textInput withMinimumHeight:(CGFloat)mininumHeight {
-    [self setHeight:[textInput setAttributedText:text withMinimumHeight:mininumHeight andResize:NO] forView:textInput];
+    [self expandFrame:YES forView:textInput withHeight:[textInput setAttributedText:text withMinimumHeight:mininumHeight andResize:NO]];
 }
 
 @end

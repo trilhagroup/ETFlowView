@@ -12,14 +12,17 @@
 
 // Default Methods
 - (void)expandFrame:(BOOL)expand forView:(UIView *)view;
+- (void)expandFrame:(BOOL)expand forView:(UIView *)view withHeight:(CGFloat)height;
+- (void)expandFrame:(BOOL)expand forView:(UIView *)view withAdditionalHeight:(CGFloat)additionalHeight;
+
 - (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view;
 - (void)expandFrame:(BOOL)expand forWrapperOfSquareView:(UIView *)view;
 - (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view withHeight:(CGFloat)height;
-- (void)expandFrame:(BOOL)expand forView:(UIView *)view withHeight:(CGFloat)height;
-- (void)setHeight:(CGFloat)height forView:(UIView *)view;
+- (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view withAdditionalHeight:(CGFloat)additionalHeight;
 
 // Custom methods
-- (void)hideFrameForView:(UIView *)view;
-- (void)updateFrameForSubview:(UIView *)view forString:(NSString *)string;
+- (void)toggleFrameForWrapperOfView:(UIView *)view basedOnText:(NSString *)text;
+- (void)toggleFrameForWrapperOfView:(UIView *)view basedOnText:(NSString *)text withHeight:(CGFloat)height;
+- (void)toggleFrameForWrapperOfView:(UIView *)view basedOnText:(NSString *)text withAdditionalHeight:(CGFloat)additionalHeight;
 
 @end
