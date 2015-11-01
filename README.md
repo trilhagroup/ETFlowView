@@ -41,7 +41,7 @@ The **recommended** way is to manually update the hierarchy. To do this, just ca
 
 Otherwise, if you want KVO enabled on every view of the hierarchy, you should set `_shouldBind` to `YES`. On this mode, all elements will be automatically bound whenever you call `addSubView` or `removeFromSuperview`. Unfortunatelly, Apple's implementation doesn't follow keyPath:frame properly, **so missed calls occur frequently**.
 
-Everytime a view is resized, `ETFlowView` will update its `contentSize` property to perfectly fit the content.
+Everytime a view is resized, `ETFlowView` will update its `contentSize` property to fit the content if `fitFrameToContentSize` is set to `YES`.
 
 ### Absolute
 
