@@ -293,16 +293,22 @@
                 if (view.alpha == 0.0f) continue;
                 if (view.frame.size.height <= 0.0f) continue;
                 
-                // Move it (or keep it in place)
+                // Check if our current view's width frame fits into the remaining space
+                if (currentX + view.frame.size.width > masterView.superview.frame.size.width) {
+                    currentX = 0.0f;
+                    currentY += (view.frame.size.height + _matrixVerticalPadding);
+                }
+                
+                // Move it to new updated grid position
                 [view setFrame:CGRectMake(currentX, currentY, view.frame.size.width, view.frame.size.height)];
                 
                 // Highest position after all changes
                 postHighestY = MAX(postHighestY, [self normalizeOriginAtFrame:view.frame forSuperView:view.superview].origin.y);
                 
-                // Set our new cursor to the right
+                // Set our new cursor to the right by given padding
                 currentX += (view.frame.size.width + _matrixHorizontalPadding);
                 
-                // Also check if we should move it below
+                // Also check if our new addition left no empty space
                 if (currentX + view.frame.size.width > masterView.superview.frame.size.width) {
                     currentX = 0.0f;
                     currentY += (view.frame.size.height + _matrixVerticalPadding);
