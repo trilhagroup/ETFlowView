@@ -16,7 +16,7 @@
 - (void)expandFrame:(BOOL)expand forView:(UIView *)view withAdditionalHeight:(CGFloat)additionalHeight;
 
 - (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view;
-- (void)expandFrame:(BOOL)expand forWrapperOfSquareView:(UIView *)view;
+- (void)expandFrame:(BOOL)expand forWrapperOfSquareView:(UIButton *)button;
 - (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view withHeight:(CGFloat)height;
 - (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view withAdditionalHeight:(CGFloat)additionalHeight;
 

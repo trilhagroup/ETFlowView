@@ -8,6 +8,7 @@
 
 #import "ETFlowView+Resize.h"
 #import "UIView+Bounds.h"
+#import "NSString+Bounds.h"
 
 @implementation ETFlowView (Resize)
 
@@ -56,8 +57,18 @@
     [self expandFrame:expand forWrapperOfView:view withHeight:44.0f];
 }
 
-- (void)expandFrame:(BOOL)expand forWrapperOfSquareView:(UIView *)view {
-    [self expandFrame:expand forWrapperOfView:view withHeight:52.0f];
+- (void)expandFrame:(BOOL)expand forWrapperOfSquareView:(UIButton *)button {
+
+    // See if our button fits inside default state
+    if ([[button titleForState:UIControlStateNormal] getProbableWidthWithFont:[[button titleLabel] font] forHorizontalConstrain:button.frame.size.width * 2.0f] > button.frame.size.width) {
+        // If not, duplicate our width
+        [button.superview setFrame:CGRectMake(button.superview.frame.origin.x, button.superview.frame.origin.y, button.superview.frame.size.width * 2.0f, button.superview.frame.size.height)];
+        // And force a resize to our matrix
+        [self expandFrame:NO forWrapperOfView:button withHeight:52.0f];
+        [self expandFrame:YES forWrapperOfView:button withHeight:52.0f];
+    }
+
+    [self expandFrame:expand forWrapperOfView:button withHeight:52.0f];
 }
 
 - (void)expandFrame:(BOOL)expand forWrapperOfView:(UIView *)view withHeight:(CGFloat)height {
