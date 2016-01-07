@@ -26,8 +26,15 @@
         
         // Resize if we found an action wrapper
         if ([currentView isKindOfClass:[ETFlowView class]] && [(ETFlowView *)currentView isMatrix]) {
+            
+            // Debugging code for matrix frames
+//            NSLog(@"%d:------------------", (int)view.tag);
+//            NSLog(@"matrix: %@", NSStringFromCGRect(((ETFlowView *)currentView).frame));
+//            for (UIView *ss in currentView.subviews) {
+//                NSLog(@"%d: %@", (int)ss.tag, NSStringFromCGRect(ss.frame));
+//            }
     
-            // Configure as a matrix
+            // In the inner flow matrix, we resize the assigned view to the desired size
             [(ETFlowView *)currentView setHeight:(expand ? height : 0.0f) forView:view];
             
             // Rerun algorithm on master view (since we have a flow view inside another flow view)
