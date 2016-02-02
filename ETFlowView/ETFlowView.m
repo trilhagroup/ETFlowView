@@ -239,44 +239,48 @@
              
              */
             
-            // Direction of our resizing (expanding/shrinking)
-            BOOL originBoundaryLimit = NO;
-            CGFloat compoundY = (masterView.frame.origin.y + [self normalizeOriginAtFrame:innerFrame forSuperView:masterView].origin.y);
-            if (delta > 0)  {
-                originBoundaryLimit = (view.frame.origin.y >= compoundY);
-            } else {
-                // Sometimes numbers can be very approximate, so we add a security margin
-                originBoundaryLimit = (view.frame.origin.y > (compoundY + 0.1f));
-            }
-            
             // We should not resize our own view
-            if (originBoundaryLimit && view != masterView) {
+            if (view != masterView) {
                 
-                // Run through parent views
-                UIView *currentView = view;
-                BOOL isVisible = YES;
-                do {
-                    currentView = currentView.superview;
-                    if (currentView.frame.size.height == 0.0f) {
-                        isVisible = NO;
-                        break;
+                // Direction of our resizing (expanding/shrinking)
+                BOOL originBoundaryLimit = NO;
+                CGFloat compoundY = (masterView.frame.origin.y + [self normalizeOriginAtFrame:innerFrame forSuperView:masterView].origin.y);
+                if (delta > 0)  {
+                    originBoundaryLimit = (view.frame.origin.y >= compoundY);
+                } else {
+                    // Sometimes numbers can be very approximate, so we add a security margin
+                    originBoundaryLimit = (view.frame.origin.y > (compoundY + 0.1f));
+                }
+                
+                // Proceed if boundaries are below
+                if (originBoundaryLimit) {
+                    
+                    // Run through parent views
+                    UIView *currentView = view;
+                    BOOL isVisible = YES;
+                    do {
+                        currentView = currentView.superview;
+                        if (currentView.frame.size.height == 0.0f) {
+                            isVisible = NO;
+                            break;
+                        }
+                    } while (currentView != self);
+                    
+                    // Check if our parent
+                    // views are all visible
+                    if (isVisible) {
+                        // Disables autoresizing
+                        UIViewAutoresizing autoResizing = view.autoresizingMask;
+                        view.autoresizingMask = UIViewAutoresizingNone;
+                        
+                        // Update view frame
+                        frame = view.frame;
+                        frame.origin.y += delta;
+                        view.frame = frame;
+                        
+                        // Enables autoresizing
+                        view.autoresizingMask = autoResizing;
                     }
-                } while (currentView != self);
-                
-                // Check if our parent
-                // views are all visible
-                if (isVisible) {
-                    // Disables autoresizing
-                    UIViewAutoresizing autoResizing = view.autoresizingMask;
-                    view.autoresizingMask = UIViewAutoresizingNone;
-                    
-                    // Update view frame
-                    frame = view.frame;
-                    frame.origin.y += delta;
-                    view.frame = frame;
-                    
-                    // Enables autoresizing
-                    view.autoresizingMask = autoResizing;
                 }
             }
         }

@@ -59,6 +59,11 @@ If you wish to use a matrix oriented design, with elements on both sides, feel f
 
 If you would like some wrappers to help with resizing texts or using pre-defined heights, try `ETFlowView+Resize.h` and `ETFlowView+Text.h`. Just import them in your class and use their available methods.
 
+Common issues
+--------
+
+- Make sure you master view is visible before resizing it. Otherwise, the algorithm will not now if your view is one of Apple's hidden ones or a true one you have specified.
+
 Support
 --------
 Just open an issue on Github and we'll get to it as soon as possible.
